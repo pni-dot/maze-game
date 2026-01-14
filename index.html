@@ -3,20 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Maze Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Для мобильной адаптации -->
     <style>
         body { text-align: center; font-family: sans-serif; }
         .screen { display: none; }
-        #gameCanvas { background: #eee; border: 2px solid #333; outline: none;}
+        #gameCanvas { background: #eee; border: 2px solid #333; outline: none; touch-action: manipulation; }
         .avatar { width: 60px; height: 60px; border-radius: 50%; margin: 5px; cursor: pointer;}
         .hidden { display: none; }
         #finalImage { width: 300px; margin: 20px auto 10px auto; display: block;}
+        /* Убираем стрелки на ПК, оставляем на телефоне */
+        @media (min-width: 700px) {
+            #touchControls { display: none; }
+        }
+        @media (max-width: 700px) {
+            #gameCanvas { width: 98vw; height: 98vw; max-width: 96vw; max-height: 96vw; }
+        }
+        #touchControls button {
+           border-radius: 12px;
+           margin: 5px;
+           background: #f1f3f4;
+           border: 2px solid #aaa;
+        }
     </style>
 </head>
 <body>
 
     <!-- Экран 1: Заставка -->
     <div id="startScreen" class="screen" style="display: block;">
-        <img src="splash.png" alt="Заставка" style="width:400px;"><br>
+        <img src="splash.png" alt="Заставка" style="width:400px;max-width:90vw;"><br>
         <button onclick="showPlayerSelect()">Играть</button>
     </div>
 
@@ -30,6 +44,17 @@
     <!-- Экран 3: Игровой -->
     <div id="gameScreen" class="screen">
         <canvas id="gameCanvas" width="600" height="600" tabindex="0"></canvas><br>
+        <!-- Кнопки для управления на телефоне -->
+        <div id="touchControls" style="margin: 16px 0;">
+            <div>
+              <button onclick="movePlayer('up')" style="width:60px; height:60px; font-size:32px;">⬆️</button>
+            </div>
+            <div>
+              <button onclick="movePlayer('left')" style="width:60px; height:60px; font-size:32px;">⬅️</button>
+              <button onclick="movePlayer('down')" style="width:60px; height:60px; font-size:32px;">⬇️</button>
+              <button onclick="movePlayer('right')" style="width:60px; height:60px; font-size:32px;">➡️</button>
+            </div>
+        </div>
         <div>Время: <span id="timer">120</span> сек</div>
         <button onclick="backToPlayerSelect()">Выйти</button>
     </div>
@@ -174,9 +199,8 @@ function drawGame() {
     };
 }
 
-// Движение игрока через стрелки
+// Управление СТРЕЛКАМИ на клавиатуре (ПК/ноутбук)
 document.addEventListener("keydown", function(e){
-    // Чтобы реагировало только если идет игра
     if (document.getElementById('gameScreen').style.display !== 'block') return;
     let {x, y} = player;
     if(e.key=="ArrowUp" && y>0 && maze[y-1][x]==0) y--;
@@ -189,6 +213,21 @@ document.addEventListener("keydown", function(e){
         if(x==exit.x && y==exit.y) finishGame(true);
     }
 });
+
+// Управление кнопками на телефоне
+function movePlayer(direction) {
+    if (document.getElementById('gameScreen').style.display !== 'block') return;
+    let {x, y} = player;
+    if(direction=="up" && y>0 && maze[y-1][x]==0) y--;
+    if(direction=="down" && y<MAZE_SIZE-1 && maze[y+1][x]==0) y++;
+    if(direction=="left" && x>0 && maze[y][x-1]==0) x--;
+    if(direction=="right" && x<MAZE_SIZE-1 && maze[y][x+1]==0) x++;
+    if(x!=player.x || y!=player.y) {
+        player.x = x; player.y = y;
+        drawGame();
+        if(x==exit.x && y==exit.y) finishGame(true);
+    }
+}
 
 // Завершение игры + показ итоговой картинки
 function finishGame(win) {
