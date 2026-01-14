@@ -12,11 +12,11 @@
         .hidden { display: none; }
         #finalImage { width: 300px; margin: 20px auto 10px auto; display: block;}
         #touchControls button {
-           border-radius: 12px;
-           margin: 5px;
-           background: #f1f3f4;
-           border: 2px solid #aaa;
-           touch-action: none;
+            border-radius: 12px;
+            margin: 5px;
+            background: #f1f3f4;
+            border: 2px solid #aaa;
+            touch-action: none;
         }
         @media (min-width: 700px) {
             #touchControls { display: none; }
@@ -29,57 +29,75 @@
 </head>
 <body>
 
-    <!-- Экран 1: Заставка -->
-    <div id="startScreen" class="screen" style="display: block;">
-        <img src="splash.png" alt="Заставка" style="width:400px;max-width:90vw;"><br>
-        <button onclick="showPlayerSelect()">Играть</button>
-    </div>
+<!-- Экран 1: Заставка -->
+<div id="startScreen" class="screen" style="display: block;">
+    <img src="splash.png" alt="Заставка" style="width:400px;max-width:90vw;"><br>
+    <button onclick="showPlayerSelect()">Играть</button>
+</div>
 
-    <!-- Экран 2: Выбор игрока -->
-    <div id="playerSelectScreen" class="screen">
-        <h2>Выберите игрока</h2>
-        <div id="avatars"></div>
-        <button onclick="backToStart()">Назад</button>
-    </div>
+<!-- Экран 2: Выбор игрока -->
+<div id="playerSelectScreen" class="screen">
+    <h2>Выберите игрока</h2>
+    <div id="avatars"></div>
+    <button onclick="backToStart()">Назад</button>
+</div>
 
-    <!-- Экран 3: Игровой -->
-    <div id="gameScreen" class="screen">
-        <canvas id="gameCanvas" width="600" height="600" tabindex="0"></canvas><br>
-        <!-- Кнопки для управления на телефоне -->
-        <div id="touchControls" style="margin: 16px 0;">
-            <div>
-              <button id="btn-up"   style="width:60px; height:60px; font-size:32px;">⬆️</button>
-            </div>
-            <div>
-              <button id="btn-left"  style="width:60px; height:60px; font-size:32px;">⬅️</button>
-              <button id="btn-down"  style="width:60px; height:60px; font-size:32px;">⬇️</button>
-              <button id="btn-right" style="width:60px; height:60px; font-size:32px;">➡️</button>
-            </div>
+<!-- Экран 3: Игровой -->
+<div id="gameScreen" class="screen">
+    <canvas id="gameCanvas" width="600" height="600" tabindex="0"></canvas><br>
+    <!-- Кнопки для управления на телефоне -->
+    <div id="touchControls" style="margin: 16px 0;">
+        <div>
+            <button id="btn-up"   style="width:60px; height:60px; font-size:32px;">⬆️</button>
         </div>
-        <div>Время: <span id="timer">120</span> сек</div>
-        <button onclick="backToPlayerSelect()">Выйти</button>
+        <div>
+            <button id="btn-left"  style="width:60px; height:60px; font-size:32px;">⬅️</button>
+            <button id="btn-down"  style="width:60px; height:60px; font-size:32px;">⬇️</button>
+            <button id="btn-right" style="width:60px; height:60px; font-size:32px;">➡️</button>
+        </div>
     </div>
+    <div>Время: <span id="timer">120</span> сек</div>
+    <button onclick="backToPlayerSelect()">Выйти</button>
+</div>
 
-    <!-- Экран 4: Поздравление -->
-    <div id="resultScreen" class="screen">
-        <img id="finalImage" src="" alt="Результат" />
-        <h2 id="resultText"></h2>
-        <button onclick="restartGame()">Начать заново</button>
+<!-- Экран с вопросом от хранителя -->
+<div id="guardianScreen" class="screen">
+    <img src="guardian.png" alt="Хранитель" style="width:140px; margin:16px auto; display:block;">
+    <h2 style="margin-bottom:0;">Чтобы выйти из лабиринта, ответь на вопрос:</h2>
+    <div id="guardianQuestion" style="font-size:1.05em; margin-bottom:18px;">
+        ЧТО ОЗНАЧАЕТ СЛОВО НА ГЕРБЕ Nobilitas?
     </div>
+    <button onclick="answerGuardian(true)" id="guardianAnswer1" style="margin: 8px 20px; min-width:120px; font-size:1.1em;"></button>
+    <button onclick="answerGuardian(false)" id="guardianAnswer2" style="margin: 8px 20px; min-width:120px; font-size:1.1em;"></button>
+    <div id="guardianResponse" style="margin-top:20px;font-weight:bold; font-size:1.08em;"></div>
+    <div id="guardianContinueDiv" style="margin-top:12px; display:none;">
+        <button onclick="continueAfterGuardian()">Продолжить</button>
+    </div>
+</div>
+
+<!-- Экран 4: Поздравление -->
+<div id="resultScreen" class="screen">
+    <img id="finalImage" src="" alt="Результат" />
+    <h2 id="resultText"></h2>
+    <button onclick="restartGame()">Начать заново</button>
+</div>
 
 <script>
-// ---- Параметры ----
+// =========================
+// --- НАСТРОЙКИ ---
 const AVATAR_PATHS = [
     'avatar1.png','avatar2.png','avatar3.png','avatar4.png',
     'avatar5.png','avatar6.png','avatar7.png','avatar8.png',
     'avatar9.png','avatar10.png','avatar11.png','avatar12.png'
 ];
-const MAZE_SIZE = 25; // размер лабиринта (25x25)
-const PLAYER_COLOR = '#2196F3';
+const MAZE_SIZE = 25;
+const SUCCESS_IMAGE = 'success.png';
+const FAIL_IMAGE = 'fail.png';
 const EXIT_COLOR = '#43a047';
 
-const SUCCESS_IMAGE = 'success.png'; // картинка для победы
-const FAIL_IMAGE = 'fail.png';       // картинка для проигрыша
+const GUARDIAN_QUESTION = "ЧТО ОЗНАЧАЕТ СЛОВО НА ГЕРБЕ Nobilitas?";
+const GUARDIAN_ANSWERS = ["Благородство", "Перфекционизм"]; // Первый — правильный
+const GUARDIAN_CORRECT_INDEX = 0; // 0 — правильный, 1 — неправильный
 
 let selectedAvatar = AVATAR_PATHS[0];
 let maze = [];
@@ -87,6 +105,40 @@ let player = {x: 0, y: 0};
 let exit = {x: 0, y: 0};
 let timer = 120;
 let timerId;
+let guardian = { x: 0, y: 0, passed: false };
+
+// --- Поиск пути по лабиринту (BFS) ---
+function findPath(maze, start, end) {
+    let n = maze.length;
+    let queue = [start];
+    let prev = Array.from({length: n}, () => Array(n).fill(null));
+    let visited = Array.from({length: n}, () => Array(n).fill(false));
+    visited[start.y][start.x] = true;
+    let dirs = [[0,1],[1,0],[0,-1],[-1,0]];
+
+    while (queue.length) {
+        let {x, y} = queue.shift();
+        if (x === end.x && y === end.y) break;
+        for (let [dx,dy] of dirs) {
+            let nx = x+dx, ny = y+dy;
+            if (nx>=0 && ny>=0 && nx<n && ny<n && !visited[ny][nx] && maze[ny][nx]===0) {
+                queue.push({x:nx,y:ny});
+                visited[ny][nx]=true;
+                prev[ny][nx] = {x, y};
+            }
+        }
+    }
+    // Восстановим путь
+    let path = [];
+    let curr = end;
+    while (curr && !(curr.x===start.x && curr.y===start.y)) {
+        path.push(curr);
+        curr = prev[curr.y][curr.x];
+    }
+    path.push(start);
+    path.reverse();
+    return path;
+}
 
 // --- Навигация между экранами ---
 function showScreen(id) {
@@ -94,36 +146,21 @@ function showScreen(id) {
     document.getElementById(id).style.display = 'block';
 }
 
-// ЗАСТАВКА > ВЫБОР ИГРОКА
-function showPlayerSelect() {
-    showScreen("playerSelectScreen");
-}
-function backToStart() {
-    showScreen("startScreen");
-}
-function selectAvatar(index) {
-    selectedAvatar = AVATAR_PATHS[index];
-    startGame();
-}
-function backToPlayerSelect() {
-    clearInterval(timerId);
-    showScreen("playerSelectScreen");
-}
-function restartGame() {
-    showScreen("startScreen");
-}
+function showPlayerSelect() { showScreen("playerSelectScreen"); }
+function backToStart() { showScreen("startScreen"); }
+function selectAvatar(index) { selectedAvatar = AVATAR_PATHS[index]; startGame(); }
+function backToPlayerSelect() { clearInterval(timerId); showScreen("playerSelectScreen"); }
+function restartGame() { showScreen("startScreen"); }
 
-// --- Генерация аватарок ---
 function renderAvatars() {
     let html = AVATAR_PATHS.map((path, i) =>
-      `<img class="avatar" src="${path}" onclick="selectAvatar(${i})">`
+        `<img class="avatar" src="${path}" onclick="selectAvatar(${i})">`
     ).join('');
     document.getElementById('avatars').innerHTML = html;
 }
 renderAvatars();
 
 // --- ИГРА ---
-// Генерация лабиринта — алгоритм "Обход в глубину"
 function generateMaze(n) {
     let maze = Array.from({length: n}, () => Array(n).fill(1));
     function carve(x, y) {
@@ -145,20 +182,24 @@ function startGame() {
     maze = generateMaze(MAZE_SIZE);
     player = {x: 0, y: 0};
     exit = {x: MAZE_SIZE-1, y: MAZE_SIZE-1};
+    // Найти путь и поставить хранителя перед выходом
+    let path = findPath(maze, {x:0, y:0}, {x:MAZE_SIZE-1, y:MAZE_SIZE-1});
+    let guardianCell = path.length >= 2 ? path[path.length-2] : {x: MAZE_SIZE-2, y: MAZE_SIZE-2};
+    guardian = { x: guardianCell.x, y: guardianCell.y, passed: false };
     timer = 120;
     document.getElementById('timer').textContent = timer;
     showScreen("gameScreen");
-    setTimeout(() => {
-        document.getElementById('gameCanvas').focus();
-    }, 100);
+    setTimeout(() => { document.getElementById('gameCanvas').focus(); }, 100);
     drawGame();
     timerId = setInterval(gameTick, 1000);
 }
+
 function gameTick() {
     timer -= 1;
     document.getElementById('timer').textContent = timer;
     if(timer <= 0) return finishGame(false);
 }
+
 function drawGame() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -171,8 +212,26 @@ function drawGame() {
             ctx.fillStyle = "#333";
             ctx.fillRect(x*size, y*size, size, size);
         }
+    // EXIT
     ctx.fillStyle = EXIT_COLOR;
     ctx.fillRect(exit.x*size, exit.y*size, size, size);
+
+    // Рисуем хранителя если не пройден
+    if (!guardian.passed) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc((guardian.x+0.5)*size, (guardian.y+0.5)*size, size/2.5, 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.clip();
+        let gimg = new Image();
+        gimg.src = "guardian.png";
+        gimg.onload = function() {
+            ctx.drawImage(gimg, guardian.x*size, guardian.y*size, size, size);
+            ctx.restore();
+        };
+        ctx.fillStyle = "#ffcc00";
+        ctx.fill();
+    }
 
     // Игрок-аватар
     let img = new Image();
@@ -188,7 +247,7 @@ function drawGame() {
     };
 }
 
-// Управление СТРЕЛКАМИ на клавиатуре (ПК/ноутбук)
+// -- Управление (клавиатура) --
 document.addEventListener("keydown", function(e){
     if (document.getElementById('gameScreen').style.display !== 'block') return;
     let {x, y} = player;
@@ -196,6 +255,11 @@ document.addEventListener("keydown", function(e){
     if(e.key=="ArrowDown" && y<MAZE_SIZE-1 && maze[y+1][x]==0) y++;
     if(e.key=="ArrowLeft" && x>0 && maze[y][x-1]==0) x--;
     if(e.key=="ArrowRight" && x<MAZE_SIZE-1 && maze[y][x+1]==0) x++;
+    // Проверка на хранителя
+    if (!guardian.passed && x === guardian.x && y === guardian.y) {
+        showGuardianQuestion();
+        return;
+    }
     if(x!=player.x || y!=player.y) {
         player.x = x; player.y = y;
         drawGame();
@@ -203,7 +267,7 @@ document.addEventListener("keydown", function(e){
     }
 });
 
-// Управление кнопками на телефоне с удержанием
+// -- Кнопки на телефоне --
 function movePlayer(direction) {
     if (document.getElementById('gameScreen').style.display !== 'block') return;
     let {x, y} = player;
@@ -211,6 +275,10 @@ function movePlayer(direction) {
     if(direction=="down" && y<MAZE_SIZE-1 && maze[y+1][x]==0) y++;
     if(direction=="left" && x>0 && maze[y][x-1]==0) x--;
     if(direction=="right" && x<MAZE_SIZE-1 && maze[y][x+1]==0) x++;
+    if (!guardian.passed && x === guardian.x && y === guardian.y) {
+        showGuardianQuestion();
+        return;
+    }
     if(x!=player.x || y!=player.y) {
         player.x = x; player.y = y;
         drawGame();
@@ -251,6 +319,45 @@ window.addEventListener('DOMContentLoaded', () => {
         el.addEventListener("mouseleave", stopHold);
     }
 });
+
+// ===== Хранитель =====
+function showGuardianQuestion() {
+    showScreen('guardianScreen');
+    document.getElementById('guardianQuestion').textContent = GUARDIAN_QUESTION;
+    document.getElementById('guardianAnswer1').textContent = GUARDIAN_ANSWERS[0];
+    document.getElementById('guardianAnswer2').textContent = GUARDIAN_ANSWERS[1];
+    document.getElementById('guardianAnswer1').disabled = false;
+    document.getElementById('guardianAnswer2').disabled = false;
+    document.getElementById('guardianResponse').textContent = "";
+    document.getElementById('guardianContinueDiv').style.display = "none";
+}
+
+function answerGuardian(isFirst) {
+    document.getElementById('guardianAnswer1').disabled = true;
+    document.getElementById('guardianAnswer2').disabled = true;
+
+    const correct = (isFirst ? 0 : 1) === GUARDIAN_CORRECT_INDEX;
+    if (correct) {
+        document.getElementById('guardianResponse').textContent = "Всё верно, проходи!";
+        guardian.passed = true;
+        document.getElementById('guardianContinueDiv').style.display = "";
+    } else {
+        document.getElementById('guardianResponse').textContent = "Это не верно, придётся пройти весь путь сначала.";
+        document.getElementById('guardianContinueDiv').style.display = "";
+        guardian.passed = false;
+    }
+}
+
+function continueAfterGuardian() {
+    if (guardian.passed) {
+        showScreen('gameScreen');
+        drawGame();
+    } else {
+        player = {x: 0, y: 0}; // на старт
+        showScreen('gameScreen');
+        drawGame();
+    }
+}
 
 // Завершение игры + показ итоговой картинки
 function finishGame(win) {
