@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Maze Game</title>
+    <style>
+        body { text-align: center; font-family: sans-serif; }
+        .screen { display: none; }
+        #gameCanvas { background: #eee; border: 2px solid #333; outline: none;}
+        .avatar { width: 60px; height: 60px; border-radius: 50%; margin: 5px; cursor: pointer;}
+        .hidden { display: none; }
+        #finalImage { width: 300px; margin: 20px auto 10px auto; display: block;}
+    </style>
+</head>
+<body>
+
+    <!-- Экран 1: Заставка -->
+    <div id="startScreen" class="screen" style="display: block;">
+        <img src="splash.png" alt="Заставка" style="width:400px;"><br>
+        <button onclick="showPlayerSelect()">Играть</button>
+    </div>
+
+    <!-- Экран 2: Выбор игрока -->
+    <div id="playerSelectScreen" class="screen">
+        <h2>Выберите игрока</h2>
+        <div id="avatars"></div>
+        <button onclick="backToStart()">Назад</button>
+    </div>
+
+    <!-- Экран 3: Игровой -->
+    <div id="gameScreen" class="screen">
+        <canvas id="gameCanvas" width="600" height="600" tabindex="0"></canvas><br>
+        <div>Время: <span id="timer">120</span> сек</div>
+        <button onclick="backToPlayerSelect()">Выйти</button>
+    </div>
+
+    <!-- Экран 4: Поздравление -->
+    <div id="resultScreen" class="screen">
+        <img id="finalImage" src="" alt="Результат" />
+        <h2 id="resultText"></h2>
+        <button onclick="restartGame()">Начать заново</button>
+    </div>
+
+<script>
+// ---- Параметры ----
+const AVATAR_PATHS = [
+    'avatar1.png','avatar2.png','avatar3.png','avatar4.png',
+    'avatar5.png','avatar6.png','avatar7.png','avatar8.png',
+    'avatar9.png','avatar10.png','avatar11.png','avatar12.png'
+];
+const MAZE_SIZE = 25; // размер лабиринта (25x25)
+const PLAYER_COLOR = '#2196F3';
+const EXIT_COLOR = '#43a047';
+
+const SUCCESS_IMAGE = 'success.png'; // название картинки для победы
+const FAIL_IMAGE = 'fail.png';       // название картинки для проигрыша
+
+let selectedAvatar = AVATAR_PATHS[0];
+let maze = [];
+let player = {x: 0, y: 0};
+let exit = {x: 0, y: 0};
+let timer = 120;
+let timerId;
+
+// --- Навигация между экранами ---
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'block';
+}
+
+// ЗАСТАВКА > ВЫБОР ИГРОКА
+function showPlayerSelect() {
+    showScreen("playerSelectScreen");
+}
+// ВЫБОР ИГРОКА > НАЗАД
+function backToStart() {
+    showScreen("startScreen");
+}
+// ВЫБОР ИГРОКА > ИГРА
+function selectAvatar(index) {
+    selectedAvatar = AVATAR_PATHS[index];
+    startGame();
+}
+// ИГРА > НАЗАД
+function backToPlayerSelect() {
+    clearInterval(timerId);
+    showScreen("playerSelectScreen");
+}
+// ЗАНОВО
+function restartGame() {
+    showScreen("startScreen");
+}
+
+// --- Генерация аватарок ---
+function renderAvatars() {
+    let html = AVATAR_PATHS.map((path, i) =>
+      `<img class="avatar" src="${path}" onclick="selectAvatar(${i})">`
+    ).join('');
+    document.getElementById('avatars').innerHTML = html;
+}
+renderAvatars();
+
+// --- ИГРА ---
+// Генерация лабиринта — алгоритм "Обход в глубину"
+function generateMaze(n) {
+    let maze = Array.from({length: n}, () => Array(n).fill(1)); // все стены
+    function carve(x, y) {
+        const dirs = [[0,2],[2,0],[0,-2],[-2,0]].sort(()=>Math.random()-0.5);
+        maze[y][x] = 0;
+        dirs.forEach(([dx,dy])=> {
+            let nx = x+dx, ny = y+dy;
+            if(nx>=0 && ny>=0 && nx<n && ny<n && maze[ny][nx]==1){
+                maze[ y+dy/2 ][ x+dx/2 ]=0;
+                carve(nx,ny);
+            }
+        });
+    }
+    carve(0,0);
+    return maze;
+}
+
+// Начать игру
+function startGame() {
+    maze = generateMaze(MAZE_SIZE);
+    player = {x: 0, y: 0};
+    exit = {x: MAZE_SIZE-1, y: MAZE_SIZE-1};
+    timer = 120;
+    document.getElementById('timer').textContent = timer;
+    showScreen("gameScreen");
+    setTimeout(() => { // важно дать фокус после отображения
+        document.getElementById('gameCanvas').focus();
+    }, 100);
+    drawGame();
+    timerId = setInterval(gameTick, 1000);
+}
+
+// Таймер
+function gameTick() {
+    timer -= 1;
+    document.getElementById('timer').textContent = timer;
+    if(timer <= 0) return finishGame(false);
+}
+
+// Рисуем лабиринт
+function drawGame() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let size = canvas.width / MAZE_SIZE;
+    // Лабиринт
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for(let y=0;y<MAZE_SIZE;y++)
+      for(let x=0;x<MAZE_SIZE;x++)
+        if(maze[y][x]==1){
+            ctx.fillStyle = "#333";
+            ctx.fillRect(x*size, y*size, size, size);
+        }
+
+    // EXIT
+    ctx.fillStyle = EXIT_COLOR;
+    ctx.fillRect(exit.x*size, exit.y*size, size, size);
+
+    // Игрок-аватар
+    let img = new Image();
+    img.src = selectedAvatar;
+    img.onload = ()=>{
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc((player.x+0.5)*size, (player.y+0.5)*size, size/2.1, 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(img, player.x*size, player.y*size, size, size);
+        ctx.restore();
+    };
+}
+
+// Движение игрока через стрелки
+document.addEventListener("keydown", function(e){
+    // Чтобы реагировало только если идет игра
+    if (document.getElementById('gameScreen').style.display !== 'block') return;
+    let {x, y} = player;
+    if(e.key=="ArrowUp" && y>0 && maze[y-1][x]==0) y--;
+    if(e.key=="ArrowDown" && y<MAZE_SIZE-1 && maze[y+1][x]==0) y++;
+    if(e.key=="ArrowLeft" && x>0 && maze[y][x-1]==0) x--;
+    if(e.key=="ArrowRight" && x<MAZE_SIZE-1 && maze[y][x+1]==0) x++;
+    if(x!=player.x || y!=player.y) {
+        player.x = x; player.y = y;
+        drawGame();
+        if(x==exit.x && y==exit.y) finishGame(true);
+    }
+});
+
+// Завершение игры + показ итоговой картинки
+function finishGame(win) {
+    clearInterval(timerId);
+    showScreen('resultScreen');
+    let img = document.getElementById('finalImage');
+    if(win) {
+        document.getElementById('resultText').textContent = "Поздравляем, вы прошли лабиринт!";
+        img.src = SUCCESS_IMAGE;
+        img.alt = "Вы победили!";
+    } else {
+        document.getElementById('resultText').textContent = "Время вышло!";
+        img.src = FAIL_IMAGE;
+        img.alt = "Вы проиграли!";
+    }
+}
+</script>
+</body>
+</html>
