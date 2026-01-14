@@ -3,26 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Maze Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Для мобильной адаптации -->
+    <meta name="viewport" content="width=600, initial-scale=1, user-scalable=no">
     <style>
         body { text-align: center; font-family: sans-serif; }
         .screen { display: none; }
-        #gameCanvas { background: #eee; border: 2px solid #333; outline: none; touch-action: manipulation; }
+        #gameCanvas { background: #eee; border: 2px solid #333; outline: none; touch-action: manipulation;}
         .avatar { width: 60px; height: 60px; border-radius: 50%; margin: 5px; cursor: pointer;}
         .hidden { display: none; }
         #finalImage { width: 300px; margin: 20px auto 10px auto; display: block;}
-        /* Убираем стрелки на ПК, оставляем на телефоне */
-        @media (min-width: 700px) {
-            #touchControls { display: none; }
-        }
-        @media (max-width: 700px) {
-            #gameCanvas { width: 98vw; height: 98vw; max-width: 96vw; max-height: 96vw; }
-        }
         #touchControls button {
            border-radius: 12px;
            margin: 5px;
            background: #f1f3f4;
            border: 2px solid #aaa;
+           touch-action: none;
+        }
+        @media (min-width: 700px) {
+            #touchControls { display: none; }
+        }
+        @media (max-width: 700px) {
+            #gameCanvas { width: 98vw; height: 98vw; max-width: 96vw; max-height: 96vw; }
+            #finalImage { max-width: 90vw;}
         }
     </style>
 </head>
@@ -47,12 +48,12 @@
         <!-- Кнопки для управления на телефоне -->
         <div id="touchControls" style="margin: 16px 0;">
             <div>
-              <button onclick="movePlayer('up')" style="width:60px; height:60px; font-size:32px;">⬆️</button>
+              <button id="btn-up"   style="width:60px; height:60px; font-size:32px;">⬆️</button>
             </div>
             <div>
-              <button onclick="movePlayer('left')" style="width:60px; height:60px; font-size:32px;">⬅️</button>
-              <button onclick="movePlayer('down')" style="width:60px; height:60px; font-size:32px;">⬇️</button>
-              <button onclick="movePlayer('right')" style="width:60px; height:60px; font-size:32px;">➡️</button>
+              <button id="btn-left"  style="width:60px; height:60px; font-size:32px;">⬅️</button>
+              <button id="btn-down"  style="width:60px; height:60px; font-size:32px;">⬇️</button>
+              <button id="btn-right" style="width:60px; height:60px; font-size:32px;">➡️</button>
             </div>
         </div>
         <div>Время: <span id="timer">120</span> сек</div>
@@ -77,8 +78,8 @@ const MAZE_SIZE = 25; // размер лабиринта (25x25)
 const PLAYER_COLOR = '#2196F3';
 const EXIT_COLOR = '#43a047';
 
-const SUCCESS_IMAGE = 'success.png'; // название картинки для победы
-const FAIL_IMAGE = 'fail.png';       // название картинки для проигрыша
+const SUCCESS_IMAGE = 'success.png'; // картинка для победы
+const FAIL_IMAGE = 'fail.png';       // картинка для проигрыша
 
 let selectedAvatar = AVATAR_PATHS[0];
 let maze = [];
@@ -97,21 +98,17 @@ function showScreen(id) {
 function showPlayerSelect() {
     showScreen("playerSelectScreen");
 }
-// ВЫБОР ИГРОКА > НАЗАД
 function backToStart() {
     showScreen("startScreen");
 }
-// ВЫБОР ИГРОКА > ИГРА
 function selectAvatar(index) {
     selectedAvatar = AVATAR_PATHS[index];
     startGame();
 }
-// ИГРА > НАЗАД
 function backToPlayerSelect() {
     clearInterval(timerId);
     showScreen("playerSelectScreen");
 }
-// ЗАНОВО
 function restartGame() {
     showScreen("startScreen");
 }
@@ -128,7 +125,7 @@ renderAvatars();
 // --- ИГРА ---
 // Генерация лабиринта — алгоритм "Обход в глубину"
 function generateMaze(n) {
-    let maze = Array.from({length: n}, () => Array(n).fill(1)); // все стены
+    let maze = Array.from({length: n}, () => Array(n).fill(1));
     function carve(x, y) {
         const dirs = [[0,2],[2,0],[0,-2],[-2,0]].sort(()=>Math.random()-0.5);
         maze[y][x] = 0;
@@ -144,7 +141,6 @@ function generateMaze(n) {
     return maze;
 }
 
-// Начать игру
 function startGame() {
     maze = generateMaze(MAZE_SIZE);
     player = {x: 0, y: 0};
@@ -152,26 +148,21 @@ function startGame() {
     timer = 120;
     document.getElementById('timer').textContent = timer;
     showScreen("gameScreen");
-    setTimeout(() => { // важно дать фокус после отображения
+    setTimeout(() => {
         document.getElementById('gameCanvas').focus();
     }, 100);
     drawGame();
     timerId = setInterval(gameTick, 1000);
 }
-
-// Таймер
 function gameTick() {
     timer -= 1;
     document.getElementById('timer').textContent = timer;
     if(timer <= 0) return finishGame(false);
 }
-
-// Рисуем лабиринт
 function drawGame() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let size = canvas.width / MAZE_SIZE;
-    // Лабиринт
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     for(let y=0;y<MAZE_SIZE;y++)
@@ -180,8 +171,6 @@ function drawGame() {
             ctx.fillStyle = "#333";
             ctx.fillRect(x*size, y*size, size, size);
         }
-
-    // EXIT
     ctx.fillStyle = EXIT_COLOR;
     ctx.fillRect(exit.x*size, exit.y*size, size, size);
 
@@ -214,7 +203,7 @@ document.addEventListener("keydown", function(e){
     }
 });
 
-// Управление кнопками на телефоне
+// Управление кнопками на телефоне с удержанием
 function movePlayer(direction) {
     if (document.getElementById('gameScreen').style.display !== 'block') return;
     let {x, y} = player;
@@ -228,6 +217,40 @@ function movePlayer(direction) {
         if(x==exit.x && y==exit.y) finishGame(true);
     }
 }
+
+// обработчик удержания
+const directions = {
+    "btn-up":    "up",
+    "btn-down":  "down",
+    "btn-left":  "left",
+    "btn-right": "right"
+};
+let holdInterval = null;
+function startHold(dir) {
+    movePlayer(dir);
+    holdInterval = setInterval(() => movePlayer(dir), 80);
+}
+function stopHold() {
+    clearInterval(holdInterval);
+}
+window.addEventListener('DOMContentLoaded', () => {
+    for (const btn in directions) {
+        const el = document.getElementById(btn);
+        if (!el) continue;
+        el.addEventListener("touchstart", e => {
+            e.preventDefault();
+            startHold(directions[btn]);
+        });
+        el.addEventListener("touchend", e => {
+            e.preventDefault();
+            stopHold();
+        });
+        el.addEventListener("touchcancel", stopHold);
+        el.addEventListener("mousedown", () => startHold(directions[btn]));
+        el.addEventListener("mouseup", stopHold);
+        el.addEventListener("mouseleave", stopHold);
+    }
+});
 
 // Завершение игры + показ итоговой картинки
 function finishGame(win) {
